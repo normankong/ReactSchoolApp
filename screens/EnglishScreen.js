@@ -1,8 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
-// import * as React from 'react';
 import * as React from 'react';
-import { Image, StyleSheet, Text, View , Alert} from 'react-native';
+import { Image, StyleSheet, Text, View} from 'react-native';
+import { Button } from 'react-native-elements';
 import { RectButton, ScrollView } from 'react-native-gesture-handler';
 import Dialog from "react-native-dialog";
 
@@ -29,36 +27,46 @@ let wordList = [
   }
 ];
 
-let questionList = [];
-function initQuestion(){
-  for (let i=0; i < wordList.length; i++){
-    questionList.push(getQuestion(wordList[i]));
-  }
-}
-function getQuestion(object){
-  var word = object.word.toUpperCase();
-  var wordLength = word.length;
-  var expression= "";
-  var missingCharPos = Math.floor(Math.random() * wordLength);
-  for (var i=0; i < wordLength; i++){
-    expression += (missingCharPos == i) ? "_" : word[i];
-  }
-console.log(object.require)
-  return {
-    label : expression,
-    word : word,
-    missing : word[missingCharPos],
-    image : object.require
-  }
-}
 
+export default function EnglishScreen() {
+ 
+  const initQuestion = (callback) => {
 
-function AnswerDialog(){
+    // Randome the Array
+    // const shuffled = wordList.sort(() => 0.5 - Math.random());
+    // let selected = shuffled.slice(0, COUNT);
 
+    let tmp = [];
+    for (let i=0; i < wordList.length; i++){
+      tmp.push(getQuestion(wordList[i]));
+    }
+    if (callback != null) callback(tmp);
+    return tmp;
+  }
+
+  const getQuestion = (object) => {
+    var word = object.word.toUpperCase();
+    var wordLength = word.length;
+    var expression= "";
+    var missingCharPos = Math.floor(Math.random() * wordLength);
+    for (var i=0; i < wordLength; i++){
+      expression += (missingCharPos == i) ? "_" : word[i];
+    }
+  
+    return {
+      label : expression,
+      word : word,
+      missing : word[missingCharPos],
+      image : object.require
+    }
+  }
+  
+  const [questionList, setQuestionList] = React.useState(initQuestion()); 
   const [object, setObject] = React.useState({missing:"", state : false});
 
   return (
     <>
+      <Button title="Again" onPress={() => initQuestion(setQuestionList)}/>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {
         questionList.map((item,i) => (
@@ -80,22 +88,12 @@ function AnswerDialog(){
         <Dialog.Button label="Done" onPress={() => setObject({missing:"", state : false})}/>
       </Dialog.Container>
     </>
-  )
-}
-
-export default function EnglishScreen() {
-  initQuestion();
-  
-  return (
-      <AnswerDialog></AnswerDialog>
   );
 }
 
 
 
 function OptionButton({ icon, label, onPress, isLastOption, word }) {
-
-  // console.log(word);
   return (
     <RectButton style={[styles.option, isLastOption && styles.lastOption]} onPress={onPress}>
       <Image 
