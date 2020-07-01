@@ -1,8 +1,10 @@
 import * as React from 'react';
-import { Image, StyleSheet, Text, View} from 'react-native';
+import { Image, StyleSheet, Text, View, FlatList} from 'react-native';
 import { Button } from 'react-native-elements';
 import { RectButton, ScrollView } from 'react-native-gesture-handler';
 import Dialog from "react-native-dialog";
+import * as Speech from 'expo-speech';
+
 
 let wordList = [
   {
@@ -24,6 +26,10 @@ let wordList = [
   {
     word: 'Pear',
     require: require('../assets/images/Pear.png')
+  },
+  {
+    word: 'Strawberry',
+    require: require('../assets/images/Strawberry.png')
   }
 ];
 
@@ -38,27 +44,33 @@ export default function EnglishScreen() {
 
     let tmp = [];
     for (let i=0; i < wordList.length; i++){
-      tmp.push(getQuestion(wordList[i]));
+      tmp.push(getQuestion(wordList[i], i));
     }
     if (callback != null) callback(tmp);
     return tmp;
   }
 
-  const getQuestion = (object) => {
-    var word = object.word.toUpperCase();
-    var wordLength = word.length;
-    var expression= "";
-    var missingCharPos = Math.floor(Math.random() * wordLength);
-    for (var i=0; i < wordLength; i++){
+  const getQuestion = (object, id) => {
+    let word = object.word.toUpperCase();
+    let wordLength = word.length;
+    let expression= "";
+    let missingCharPos = Math.floor(Math.random() * wordLength);
+    for (let i=0; i < wordLength; i++){
       expression += (missingCharPos == i) ? "_" : word[i];
     }
-  
+
     return {
+      id : id,
       label : expression,
       word : word,
       missing : word[missingCharPos],
       image : object.require
     }
+  }
+
+  const showAnswer = (object) =>{
+    Speech.speak(`The missing word for ${object.word} is ${object.missing}`, {rate : 0.5, pitch : 1.5});
+    setObject(object);
   }
   
   const [questionList, setQuestionList] = React.useState(initQuestion()); 
@@ -67,19 +79,21 @@ export default function EnglishScreen() {
   return (
     <>
       <Button title="Again" onPress={() => initQuestion(setQuestionList)}/>
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {
-        questionList.map((item,i) => (
-        <OptionButton
-          key={i} 
-          icon="md-compass"
-          label={`${item.label}`}
-          onPress={() => setObject({...item, state:true})}
-          word={item}
+
+      <FlatList
+        data={questionList}
+        numColumns={2}
+        horizontal={false}
+        renderItem={({ item }) => (
+          <OptionButton
+            item={item}
+            label={`${item.label}`}
+            onPress={() => showAnswer({...item, state:true})}
           />
-        ))
-      }
-      </ScrollView>
+        )}
+        keyExtractor={item => item.id}
+      />
+
       <Dialog.Container visible={object.state}>
         <Dialog.Title>Missing word is : </Dialog.Title>
         <Dialog.Description>
@@ -93,14 +107,14 @@ export default function EnglishScreen() {
 
 
 
-function OptionButton({ icon, label, onPress, isLastOption, word }) {
+function OptionButton({ label, onPress, item }) {
   return (
-    <RectButton style={[styles.option, isLastOption && styles.lastOption]} onPress={onPress}>
+    <RectButton style={[styles.option]} onPress={onPress}>
       <Image 
-        source={word.image}
-        style={{width: 150, height: 150}} />
+        source={item.image}
+        style={styles.imageStyle} />
       <View style={{ flexDirection: 'row' }}>
-        <View style={styles.optionTextContainer}>
+        <View>
           <Text style={styles.optionText}>{label}</Text>
         </View>
       </View>
@@ -109,31 +123,21 @@ function OptionButton({ icon, label, onPress, isLastOption, word }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fafafa',
-  },
-  contentContainer: {
-    paddingTop: 15,
-    alignItems: 'center'
-  },
-  optionIconContainer: {
-    marginRight: 12,
-  },
   option: {
     backgroundColor: '#fdfdfd',
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
     paddingVertical: 15,
     borderWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: 0,
     borderColor: '#ededed',
   },
-  lastOption: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
   optionText: {
-    fontSize: 30,
+    fontSize: 25,
     alignSelf: 'flex-start',
     marginTop: 1,
+  },
+  imageStyle :{
+    width: 160, 
+    height: 160
   }
 });
